@@ -31,3 +31,27 @@ def generate_normal_metrics(services: list):
             0.0,
             base.error_rate + random.uniform(-0.2, 0.2)
         ), 3)
+
+def apply_incident_to_metrics(service, incidents):
+    """
+    Instead of modifying the metrics directly (which get overwritten by the jitter),
+    an active incident modifies the service BASELINE. 
+    Then, the metric_generator naturally adds jitter around the new, broken baseline!
+    """
+    for incident in incidents:
+        if incident.service == service.name and incident.status == "active":
+            for metric_name, rule in incident.metric_impact.items():
+                
+                # FIX: Use getattr/setattr to dynamically update Pydantic models
+                current_baseline = getattr(service.baseline, metric_name)
+                
+                if rule["type"] == "increase":
+                    # E.g., for a memory leak, increase the baseline slowly every tick
+                    setattr(service.baseline, metric_name, current_baseline + rule["rate"])
+
+                elif rule["type"] == "spike":
+                    # Immediately jump the baseline to a specific high value
+                    setattr(service.baseline, metric_name, rule["value"])
+
+                elif rule["type"] == "decrease":
+                    setattr(service.baseline, metric_name, current_baseline - rule["rate"])

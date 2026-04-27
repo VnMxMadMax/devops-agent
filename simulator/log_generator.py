@@ -60,3 +60,26 @@ def generate_normal_logs(services: list) -> list:
             logs.append(log)
 
     return logs
+
+def apply_incident_to_logs(service, logs, incidents):
+    """
+    Injects realistic ERROR logs based on the active incident.
+    """
+    for incident in incidents:
+        if incident.service == service.name and incident.status == "active" and incident.log_impact:
+            
+            # Use random chance to see if we emit an error log this tick
+            if random.random() < incident.log_impact.get("frequency", 0.5):
+                
+                error_message = random.choice(
+                    incident.log_impact.get("messages", ["Unknown error"])
+                )
+
+                # FIX: generate_log returns a dict, so we append it to our logs list
+                logs.append(generate_log(
+                    service.name,
+                    incident.log_impact.get("level", "ERROR"),
+                    error_message
+                ))
+    
+    return logs

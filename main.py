@@ -1,28 +1,39 @@
-
-from simulator.service import SERVICES
-from simulator.log_generator import generate_normal_logs
-from simulator.metric_generator import generate_normal_metrics
+import time
+from simulator.environment import SimulationEnvironment
 
 
 def main():
-    generate_normal_metrics(services=SERVICES)
+    # 1. Initialize environment
+    env = SimulationEnvironment()
 
-    print("=== SERVICE STATUS ===")
-    for service in SERVICES:
-        print(f"{service.name} -> {service.status}")
-        print(f"metrics   = {service.metrics}")
-        print(f"baseline  = {service.baseline}")
-        print("-" * 40)
+    # 2. Trigger incident
+    env.trigger_incident("memory_leak_auth")
 
-    print("\n=== GENERATED LOGS ===")
-    logs = generate_normal_logs(SERVICES)
+    print(">>> Simulation started... (Press Ctrl+C to stop)\n")
 
-    for log in logs:
-        print(
-            f"[{log['timestamp']}] "
-            f"{log['service']} "
-            f"{log['level']} - {log['message']}"
-        )
+    while True:
+        # 3. Run one tick
+        services, logs = env.tick()
+
+        # 4. Print service state
+        print("\n=== SERVICE STATUS ===")
+        for service in services:
+            print(f"{service.name} -> {service.status}")
+            print(f"metrics   = {service.metrics}")
+            print(f"baseline  = {service.baseline}")
+            print("-" * 40)
+
+        # 5. Print logs
+        print("\n=== LOGS ===")
+        for log in logs:
+            print(
+                f"[{log['timestamp']}] "
+                f"{log['service']} "
+                f"{log['level']} - {log['message']}"
+            )
+
+        # 6. Wait 1 second (heartbeat)
+        time.sleep(1)
 
 
 if __name__ == "__main__":

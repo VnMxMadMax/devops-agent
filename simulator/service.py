@@ -84,5 +84,6 @@ SERVICES = [
 ]
 
 
-for service in SERVICES:
-    print(service.name, "->", service.metrics, "| thresholds:", service.thresholds)
+if __name__ == "__main__":
+    for service in SERVICES:
+        print(service.name, "->", service.metrics, "| thresholds:", service.thresholds)
