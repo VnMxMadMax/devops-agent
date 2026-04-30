@@ -6,10 +6,14 @@ from simulator.log_generator import apply_incident_to_logs, generate_normal_logs
 
 class SimulationEnvironment:
     def __init__(self):
+        # Load your SERVICES list here
+        # Keep track of active incidents (empty list by default)
         self.services = SERVICES
         self.active_incidents = []
         
     def trigger_incident(self, incident_name: str):
+        # Find the incident in PREBUILT_INCIDENTS by name
+        # Add it to the active incidents list
         for inc in PREBUILT_INCIDENTS:
             if inc.name == incident_name:
                 inc.status = "active"
@@ -18,6 +22,8 @@ class SimulationEnvironment:
                 break
         
     def resolve_incident(self, incident_name: str):
+        # Remove the incident from the active incidents list
+        # Bonus: Reset the affected service's baseline back to normal!
         remaining = []
         for inc in self.active_incidents:
             if inc.name == incident_name:
@@ -39,6 +45,7 @@ class SimulationEnvironment:
         """
         # 1. Apply incident → shifts baseline
         for service in self.services:
+            # 1. Apply incident → shifts baseline
             apply_incident_to_metrics(service, self.active_incidents)
 
         # 2. Generate metrics for ALL services (baseline + jitter)
