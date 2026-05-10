@@ -1,6 +1,7 @@
 import random
 
 def clamp(value, min_val, max_val):
+    # Prevents Impossible Values
     return max(min_val, min(value, max_val))
 
 
@@ -42,7 +43,7 @@ def apply_incident_to_metrics(service, incidents):
         if incident.service == service.name and incident.status == "active":
             for metric_name, rule in incident.metric_impact.items():
                 
-                # FIX: Use getattr/setattr to dynamically update Pydantic models
+                # Use getattr/setattr to dynamically update Pydantic models
                 current_baseline = getattr(service.baseline, metric_name)
                 
                 if rule["type"] == "increase":

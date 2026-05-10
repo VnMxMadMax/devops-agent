@@ -1,5 +1,6 @@
 import time
 from simulator.environment import SimulationEnvironment
+from agents.orchestrator import graph
 
 
 def main():
@@ -14,6 +15,26 @@ def main():
     while True:
         # 3. Run one tick
         services, logs = env.tick()
+
+        # Convert Pydantic Service objects to dicts
+        services_dict = [s.model_dump() for s in services]
+
+        # Initial LangGraph state
+        initial_state = {
+            "services": services_dict,
+            "logs": logs,
+            "messages": [],
+            "active_incident": [inc.name for inc in env.active_incidents]
+        }
+
+        # Invoke graph
+        result = graph.invoke(initial_state)
+
+        # Print latest agent messages
+        print("\n=== AGENT OUTPUT ===")
+
+        for msg in result["messages"][-4:]:
+            print(msg)
 
         # 4. Print service state
         print("\n=== SERVICE STATUS ===")

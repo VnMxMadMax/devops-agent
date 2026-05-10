@@ -12,21 +12,7 @@ from agents.diagnosis import diagnosis_node
 
 from agents.tools import get_service_logs, get_service_metrics, restart_service
 
-class AgentState(TypedDict):
-
-    # LangGraph required field for ReAct agents to maintain conversation/tool history
-    messages: Annotated[List[BaseMessage], operator.add]
-    # Raw Inputs (from simulation)
-    services: List[Dict[str, Any]] # snapshot of all services
-    logs: List[Dict[str, Any]] # latest logs
-
-    # Monitor Agent Output
-    alert: Optional[Dict[str, Any]]
-
-
-    # Metadata/Control
-    active_incident: Optional[List[str]]
-    timestamp: Optional[str]
+from agents.state import AgentState
 
 def route_after_monitor(state: AgentState):
     if state.get("alert"):
@@ -39,23 +25,39 @@ def should_continue(state: AgentState):
     last_message = state["messages"][-1]
 
     if isinstance(last_message, AIMessage) and last_message.tool_calls:
-        return "tools"
+        return "diag_tools"
 
     return "remediation"
 
-tools = [
+def should_remediate_continue(state: AgentState):
+
+    last_message = state["messages"][-1]
+
+    if isinstance(last_message, AIMessage) and last_message.tool_calls:
+        return "remed_tools"
+
+    return END
+
+
+diag_tools = [
     get_service_logs,
-    get_service_metrics,
+    get_service_metrics
+]
+
+diag_tool_node = ToolNode(diag_tools)
+
+remed_tools = [
     restart_service
 ]
 
-tool_node = ToolNode(tools)
+remed_tool_node = ToolNode(remed_tools)
 
 graph = StateGraph(AgentState)
 
 graph.add_node("monitor", monitor_node)
 graph.add_node("diagnosis", diagnosis_node)
-graph.add_node("tools", tool_node)
+graph.add_node("diag_tools", diag_tool_node)
+graph.add_node("remed_tools", remed_tool_node)
 graph.add_node("remediation", remediation_node)
 
 graph.add_edge(START, "monitor")
@@ -70,8 +72,13 @@ graph.add_conditional_edges(
     should_continue
 )
 
-graph.add_edge("tools", "diagnosis")
+graph.add_edge("diag_tools", "diagnosis")
 
-graph.add_edge("remediation", END)
+graph.add_conditional_edges(
+    "remediation",
+    should_remediate_continue
+)
+
+graph.add_edge("remed_tools", "remediation")
 
 graph = graph.compile()

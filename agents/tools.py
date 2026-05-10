@@ -1,5 +1,6 @@
 from langchain_core.tools import tool
 from typing import List, Dict, Any
+from memory.incident_memory import search_past_incidents
 
 
 @tool
@@ -118,3 +119,40 @@ def restart_service(service_name: str) -> str:
     """
     # Dummy implementation
     return f"{service_name} restarted successfully"
+
+@tool
+def query_incident_memory(symptoms: str) -> str:
+    """
+    Search historical incident memory for similar symptoms.
+
+    Use this tool FIRST before performing deep investigation.
+    Historical incidents may contain useful root causes
+    and remediation strategies.
+
+    Input:
+    - symptoms (str): Current incident symptoms, errors,
+      or abnormal behavior observed in the system.
+
+    Output:
+    - A formatted string containing similar past incidents
+    - Returns "No past incidents found." if memory is empty
+      or no similar incidents exist.
+    """
+
+    results = search_past_incidents(symptoms)
+
+    documents = results.get("documents", [])
+
+    # No matches found
+    if not documents or not documents[0]:
+        return "No past incidents found."
+
+    # Format incidents for LLM readability
+    formatted_results = []
+
+    for idx, doc in enumerate(documents[0], start=1):
+        formatted_results.append(
+            f"Past Incident #{idx}:\n{doc}"
+        )
+
+    return "\n\n".join(formatted_results)

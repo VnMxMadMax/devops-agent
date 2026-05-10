@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from agents.orchestrator import AgentState
+from agents.state import AgentState
 
 
 def monitor_node(state: AgentState) -> Dict[str, Any]:

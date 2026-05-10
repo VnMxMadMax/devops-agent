@@ -373,4 +373,269 @@
 - Add **tool execution loop**
   - Enable LLM to call tools dynamically
 - Begin **structured output parsing**
-  - Extract root cause and remediation plan from LLM responses  
+  - Extract root cause and remediation plan from LLM responses
+
+---
+
+### Day 5 — `10 May 2026 (LAtE NIGHT 2AM)`
+**Phase:** Phase 2 — LangGraph Agent Orchestration  
+**Time Spent:** ~3 hours  
+
+#### What I Did
+- Implemented initial **LangGraph workflow orchestration**
+  - Created `StateGraph(AgentState)`
+  - Registered core agent nodes:
+    - `monitor`
+    - `diagnosis`
+    - `remediation`
+  - Compiled the graph into an executable workflow pipeline
+
+- Designed **agent execution flow**
+  - Connected:
+    - Monitor → Diagnosis → Remediation
+  - Added graph entry point and finish point
+  - Refactored architecture toward event-driven execution
+
+- Implemented **conditional routing logic**
+  - Added `route_after_monitor()` function
+  - Enabled dynamic branching:
+    - If alert exists → continue investigation
+    - If no alert → terminate workflow
+  - Prevented unnecessary diagnosis/remediation execution during healthy system states
+
+- Learned and integrated **LangGraph ToolNode execution model**
+  - Studied how tool execution loops work in ReAct-style agents
+  - Understood distinction between:
+    - LLM requesting tools
+    - LangGraph executing tools
+  - Explored AIMessage → ToolNode → ToolMessage lifecycle
+
+- Designed **ReAct reasoning loop architecture**
+  - Planned iterative investigation flow:
+    - Diagnosis Agent
+    - Tool Execution
+    - Return to Diagnosis
+  - Added conceptual design for:
+    - `should_continue()` conditional routing
+    - tool-based recursive reasoning
+  - Established architecture for multi-step root cause analysis
+
+- Planned integration of shared tool execution system
+  - Centralized tools:
+    - `get_service_logs`
+    - `get_service_metrics`
+    - `restart_service`
+  - Prepared graph structure for:
+    - ToolNode execution
+    - dynamic investigation loops
+
+---
+
+#### Challenges & How I Solved Them
+- **Challenge:** Understanding how LangGraph actually executes tools  
+- **Solution:**  
+  - Learned that `llm.bind_tools()` only exposes tools to the LLM  
+  - Real execution requires a dedicated `ToolNode`
+
+- **Challenge:** Understanding ReAct loop behavior  
+- **Solution:**  
+  - Broke the flow into:
+    - AI reasoning
+    - tool request
+    - tool execution
+    - iterative reasoning continuation
+
+- **Challenge:** Avoiding unnecessary pipeline execution during healthy states  
+- **Solution:**  
+  - Implemented conditional graph routing after Monitor Agent
+
+- **Challenge:** Understanding message-driven state transitions  
+- **Solution:**  
+  - Studied how LangGraph appends:
+    - `AIMessage`
+    - `ToolMessage`
+    - conversation history
+    into shared state automatically
+
+---
+
+#### Stuck On / Unresolved
+- ToolNode execution loop not fully integrated yet
+- Tools still use dummy/static data instead of simulator state
+- No structured root cause extraction implemented yet
+- No remediation verification loop yet
+- Diagnosis and remediation tools are not separated yet
+
+---
+
+#### Key Learnings
+- Deep understanding of **LangGraph orchestration**
+- Difference between:
+  - static pipelines
+  - conditional agent workflows
+- How ReAct agents perform:
+  - iterative reasoning
+  - evidence gathering
+  - tool-assisted investigation
+- Internal lifecycle of:
+  - `AIMessage`
+  - `ToolNode`
+  - `ToolMessage`
+- Importance of conditional routing in autonomous systems
+- How agent memory/state evolves across graph execution
+
+---
+
+#### Impact
+- Transitioned architecture from:
+  - standalone agents
+  → orchestrated multi-agent workflow
+- Established foundation for:
+  - autonomous investigations
+  - iterative root cause analysis
+  - dynamic tool execution
+- System is now approaching:
+  - fully autonomous incident response behavior
+
+---
+
+#### Tomorrow's Goal
+- Fully integrate ToolNode execution loop
+- Connect tools to live simulator state
+- Implement real dynamic tool responses
+- Add structured root cause extraction
+- Execute first complete end-to-end autonomous incident workflow
+
+---
+
+### Day 6 — `10 May 2026 MORNING`
+**Phase:** Phase 3 — Memory & Intelligence  
+**Time Spent:** ~2–3 hours  
+
+#### What I Did
+- Implemented the foundation of the **long-term memory system** using ChromaDB
+  - Created `memory/incident_memory.py`
+  - Initialized persistent local vector database using:
+    - `chromadb.PersistentClient(path="./chroma_db")`
+  - Created / loaded `incident_history` collection
+- Built memory helper functions:
+  - `save_incident()`
+    - Stores resolved incidents into vector memory
+    - Combines:
+      - symptoms
+      - root cause
+      - remediation
+    - Stores metadata for structured retrieval
+  - `search_past_incidents()`
+    - Performs semantic similarity search using incident symptoms
+    - Retrieves related historical incidents
+- Learned and implemented **semantic vector search concepts**
+  - Understood difference between:
+    - keyword matching
+    - embedding similarity search
+  - Learned how ChromaDB automatically:
+    - embeds text
+    - compares semantic meaning
+    - retrieves closest matches
+- Integrated memory into the **Diagnosis Agent**
+  - Imported memory search into `agents/tools.py`
+  - Created new tool:
+    - `query_incident_memory(symptoms)`
+  - Added formatting logic to convert retrieved ChromaDB documents into LLM-readable context
+  - Implemented empty-result handling:
+    - returns `"No past incidents found."`
+- Updated Diagnosis Agent behavior
+  - Added `query_incident_memory` to tool list
+  - Modified system prompt to enforce:
+    - memory lookup before investigation
+    - historical RCA guidance
+    - validation of past incidents using logs and metrics
+- Improved understanding of:
+  - Retrieval-Augmented Generation (RAG)
+  - memory-augmented agents
+  - operational knowledge systems
+  - AI-assisted incident response workflows
+
+---
+
+#### Challenges & How I Solved Them
+- **Challenge:** Confusion about how symptoms are searched inside stored documents  
+- **Solution:**  
+  - Learned that ChromaDB performs:
+    - semantic embedding search
+    - not manual keyword search
+  - Understood that the current symptoms themselves become the search query  
+
+- **Challenge:** Understanding ChromaDB query response structure  
+- **Solution:**  
+  - Explored nested result format:
+    - `results["documents"][0]`
+  - Learned that Chroma supports multi-query retrieval, which is why results are nested arrays  
+
+- **Challenge:** Formatting vector search results for LLM reasoning  
+- **Solution:**  
+  - Converted retrieved incidents into structured readable context:
+    - `Past Incident #1`
+    - `Past Incident #2`
+
+- **Challenge:** Debugging tool implementation  
+- **Solution:**  
+  - Fixed typo bug:
+    - `appen()` → `append()`
+
+---
+
+#### Stuck On / Unresolved
+- Memory currently stores incidents as raw concatenated text only
+- No similarity threshold filtering implemented yet
+- No automatic memory write-back after remediation success
+- No incident summarization/compression pipeline yet
+
+---
+
+#### Key Learnings
+- Difference between:
+  - traditional databases
+  - vector databases
+- Fundamentals of:
+  - embeddings
+  - semantic similarity
+  - vector retrieval
+- How memory transforms an LLM workflow into an:
+  - adaptive
+  - learning
+  - agentic system
+- Importance of:
+  - retrieval before reasoning
+  - evidence validation after retrieval
+- How production-grade RCA systems combine:
+  - memory retrieval
+  - hypothesis generation
+  - evidence verification
+
+---
+
+#### Impact
+- Transitioned the system from:
+  - **stateless diagnosis → memory-augmented intelligence**
+- Enabled historical incident recall and reuse
+- Established the foundation for:
+  - self-improving agents
+  - operational learning
+  - incident knowledge reuse
+  - future RAG workflows
+- System can now:
+  - remember past failures
+  - retrieve similar incidents
+  - guide future diagnosis using historical evidence
+
+---
+
+#### Tomorrow's Goal
+- Automatically save successful remediations into memory
+- Connect remediation success → memory write-back loop
+- Begin building:
+  - Post-Mortem Agent
+  - incident timeline generation
+  - structured incident reports
+- Explore similarity score filtering for higher-quality memory retrieval

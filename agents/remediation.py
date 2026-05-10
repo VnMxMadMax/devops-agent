@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage
 
-from agents.orchestrator import AgentState
+from agents.state import AgentState
 from agents.tools import restart_service
 
 # Load env
@@ -11,7 +11,7 @@ load_dotenv()
 
 # Initialize LLM
 llm = ChatOpenAI(
-    model="gpt-4o-mini",
+    model="gpt-5.4-2026-03-05",
     temperature=0
 )
 

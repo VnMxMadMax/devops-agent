@@ -3,15 +3,15 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
-from agents.orchestrator import AgentState
-from agents.tools import get_service_logs, get_service_metrics
+from agents.state import AgentState
+from agents.tools import get_service_logs, get_service_metrics, query_incident_memory
 
 # Load environment variables
 load_dotenv()
 
 # Initialize LLM
 llm = ChatOpenAI(
-    model="gpt-5.4",
+    model="gpt-5.4-2026-03-05",
     temperature=0
 )
 
@@ -38,6 +38,18 @@ def diagnosis_node(state: AgentState) -> Dict[str, Any]:
     system_prompt = f"""
 You are an expert DevOps engineer performing root cause analysis.
 
+IMPORTANT:
+You should ALWAYS query the incident memory first
+to check whether similar incidents have occurred before.
+
+If similar incidents are found:
+- use their root causes as investigation hints
+- compare historical symptoms with current symptoms
+- validate whether the same issue is happening again
+
+Do not blindly trust memory results.
+Always verify using logs and metrics.
+
 An alert has been triggered in the system:
 
 Service: {service}
@@ -55,7 +67,7 @@ Use them when necessary before concluding.
 """
 
     # Bind tools
-    tools = [get_service_logs, get_service_metrics]
+    tools = [get_service_logs, get_service_metrics, query_incident_memory]
     llm_with_tools = llm.bind_tools(tools)
 
     # Add system message (only once ideally)
