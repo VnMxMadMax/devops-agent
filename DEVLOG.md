@@ -639,3 +639,151 @@
   - incident timeline generation
   - structured incident reports
 - Explore similarity score filtering for higher-quality memory retrieval
+
+### Day 7 — `11 May 2026`
+**Phase:** Phase 4 — API & Real-Time Infrastructure  
+**Time Spent:** ~2–3 hours  
+
+#### What I Did
+- Began implementation of the **FastAPI backend layer**
+  - Created foundational API architecture for Sentinel AI
+  - Structured backend into:
+    - `api/models.py`
+    - `api/main.py`
+
+- Designed **Pydantic API schemas**
+  - Implemented:
+    - `TriggerIncidentRequest`
+    - `ServiceStatus`
+    - `SimulationStatusResponse`
+  - Standardized request/response contracts between backend and future frontend dashboard
+
+- Built initial **REST API endpoints**
+  - `GET /health`
+    - Simple health verification endpoint
+  - `GET /status`
+    - Returns:
+      - live service states
+      - metrics snapshot
+      - active incidents
+  - `POST /incident/trigger`
+    - Dynamically triggers simulated incidents
+  - `POST /incident/resolve`
+    - Resolves active incidents
+
+- Integrated **SimulationEnvironment** into FastAPI
+  - Created module-level shared environment instance
+  - Enabled persistent in-memory simulation state across API requests
+
+- Implemented first **WebSocket simulation endpoint**
+  - Added:
+    - `@app.websocket("/ws/simulation")`
+  - Established real-time communication pipeline between:
+    - simulation environment
+    - LangGraph agent system
+    - frontend dashboard (future phase)
+
+- Integrated **LangGraph execution pipeline** into WebSocket loop
+  - Built continuous simulation heartbeat:
+    1. Advance simulation (`tick()`)
+    2. Build `initial_state`
+    3. Execute LangGraph agent workflow
+    4. Stream agent messages over WebSocket
+  - Added 1-second async simulation cycle
+
+- Implemented **threadpool offloading** for LangGraph execution
+  - Used:
+    ```python
+    asyncio.get_event_loop().run_in_executor()
+    ```
+  - Prevented FastAPI event loop blocking from synchronous `graph.invoke()`
+
+- Streamed agent reasoning over WebSocket
+  - Sent structured JSON messages:
+    - message type
+    - content
+  - Prepared architecture for:
+    - live agent workflow visualization
+    - real-time dashboard updates
+
+---
+
+#### Challenges & How I Solved Them
+- **Challenge:** Understanding async vs sync execution in FastAPI  
+- **Solution:**  
+  - Learned why `graph.invoke()` blocks the event loop
+  - Used `run_in_executor()` to offload blocking LangGraph execution into worker threads
+
+- **Challenge:** Designing shared vs isolated simulation state  
+- **Solution:**  
+  - Used:
+    - module-level `env` for REST APIs
+    - dedicated `ws_env` per WebSocket client
+  - Prevented multi-client simulation collisions
+
+- **Challenge:** Converting Pydantic service models into API-safe JSON  
+- **Solution:**  
+  - Used:
+    ```python
+    model_dump()
+    ```
+  - Standardized serialization for frontend consumption
+
+- **Challenge:** Structuring the LangGraph initial state correctly  
+- **Solution:**  
+  - Built complete runtime state including:
+    - services
+    - logs
+    - messages
+    - active incidents
+    - timestamp metadata
+
+---
+
+#### Stuck On / Unresolved
+- Frontend dashboard not implemented yet
+- WebSocket currently streams only agent messages
+- No real-time metrics visualization yet
+- No WebSocket reconnection handling
+- Incident lifecycle events are not yet broadcast separately
+
+---
+
+#### Key Learnings
+- Difference between:
+  - synchronous AI execution
+  - asynchronous web servers
+- Importance of threadpool offloading in AI-powered APIs
+- Real-world FastAPI WebSocket architecture patterns
+- How stateful simulation environments behave inside API servers
+- API schema design using Pydantic
+- Building event-driven real-time systems
+- How backend observability systems stream live operational data
+
+---
+
+#### Impact
+- Transitioned Sentinel AI from:
+  - standalone backend simulation
+  → real-time observable platform
+- Established foundation for:
+  - live dashboards
+  - streaming agent workflows
+  - real-time incident visualization
+- Created production-style architecture combining:
+  - FastAPI
+  - WebSockets
+  - LangGraph
+  - AI agents
+  - simulation systems
+
+---
+
+#### Tomorrow's Goal
+- Begin frontend dashboard implementation
+  - WebSocket client connection
+  - Live metrics visualization
+  - Agent workflow UI
+  - Real-time log stream viewer
+- Build incident trigger controls
+- Start dashboard styling and layout system
