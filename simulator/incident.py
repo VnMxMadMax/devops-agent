@@ -41,7 +41,7 @@ auth_service_incident = Incident(
     metric_impact={
         "memory": {
             "type": "increase",
-            "rate": 0.5   # increases every tick
+            "rate": 4.0   # increases every tick — breach threshold in ~5 ticks for testing
         }
     },
 

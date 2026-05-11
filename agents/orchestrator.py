@@ -9,8 +9,9 @@ from langgraph.prebuilt import ToolNode
 from agents.remediation import remediation_node
 from agents.monitor import monitor_node
 from agents.diagnosis import diagnosis_node
+from agents.postmortem import postmortem_node
 
-from agents.tools import get_service_logs, get_service_metrics, restart_service
+from agents.tools import get_service_logs, get_service_metrics, restart_service, query_incident_memory
 
 from agents.state import AgentState
 
@@ -36,12 +37,13 @@ def should_remediate_continue(state: AgentState):
     if isinstance(last_message, AIMessage) and last_message.tool_calls:
         return "remed_tools"
 
-    return END
+    return "postmortem"
 
 
 diag_tools = [
     get_service_logs,
-    get_service_metrics
+    get_service_metrics,
+    query_incident_memory
 ]
 
 diag_tool_node = ToolNode(diag_tools)
@@ -59,6 +61,7 @@ graph.add_node("diagnosis", diagnosis_node)
 graph.add_node("diag_tools", diag_tool_node)
 graph.add_node("remed_tools", remed_tool_node)
 graph.add_node("remediation", remediation_node)
+graph.add_node("postmortem", postmortem_node)
 
 graph.add_edge(START, "monitor")
 
@@ -80,5 +83,7 @@ graph.add_conditional_edges(
 )
 
 graph.add_edge("remed_tools", "remediation")
+
+graph.add_edge("postmortem", END)
 
 graph = graph.compile()
