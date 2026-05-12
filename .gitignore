@@ -2,3 +2,14 @@ venv/
 .env
 __pycache__/
 *.pyc
+
+# ChromaDB local runtime artifacts
+chroma_db/
+
+# Node / frontend
+dashboard/node_modules/
+dashboard/dist/
+
+# Misc
+.cache/
+*.egg-info/

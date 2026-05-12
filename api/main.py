@@ -35,11 +35,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# Shared environment — used by both REST endpoints and the WebSocket
+# Shared environment — used by both REST endpoints and the WebSocket.
+# V1 design: single shared env. A V2 improvement would be per-client
+# SimulationEnvironment instances to prevent multi-client state collisions.
 env = SimulationEnvironment()
-
-# Alias so the WebSocket handler can reference the shared env by its own name
-ws_env = env
 
 
 @app.get("/health")
@@ -99,14 +98,14 @@ async def simulation_ws(websocket: WebSocket):
 
     await websocket.accept()
 
-    # Use the SHARED env so REST endpoints can control this simulation
-    ws_env.trigger_incident("memory_leak_auth")
+    # Use the SHARED env (V1 design — see module-level comment)
+    env.trigger_incident("memory_leak_auth")
 
     try:
         while True:
 
             # Advance simulation
-            services, logs = ws_env.tick()
+            services, logs = env.tick()
 
             # Build LangGraph state
             initial_state = {
@@ -119,7 +118,7 @@ async def simulation_ws(websocket: WebSocket):
                 "alert": None,
                 "active_incident": [
                     inc.name
-                    for inc in ws_env.active_incidents
+                    for inc in env.active_incidents
                 ],
                 "timestamp": None
             }
