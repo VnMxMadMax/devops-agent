@@ -6,6 +6,8 @@ from fastapi import (
     WebSocketDisconnect
 )
 
+from fastapi.middleware.cors import CORSMiddleware
+
 from api.models import (
     TriggerIncidentRequest,
     ServiceStatus,
@@ -16,9 +18,23 @@ from simulator.environment import SimulationEnvironment
 
 from agents.orchestrator import graph
 
-
 app = FastAPI(title="Sentinel AI")
 
+origins = [
+    "http://localhost:3000",  # Common port for React
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",  # Vite dev server
+    "http://127.0.0.1:5173",
+    "https://sentinelai.com",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Shared environment — used by both REST endpoints and the WebSocket
 env = SimulationEnvironment()
 
@@ -111,25 +127,32 @@ async def simulation_ws(websocket: WebSocket):
             # Run blocking graph in thread pool
             # Use get_running_loop() — get_event_loop() is deprecated in Python 3.10+
             loop = asyncio.get_running_loop()
-            result = await loop.run_in_executor(
-                None,
-                graph.invoke,
-                initial_state
-            )
+            try:
+                result = await loop.run_in_executor(
+                    None,
+                    graph.invoke,
+                    initial_state
+                )
 
-            # Stream messages to frontend
-            messages = result["messages"]
-            if messages:
-                for msg in messages:
+                # Stream messages to frontend
+                messages = result.get("messages", [])
+                if messages:
+                    for msg in messages:
+                        await websocket.send_json({
+                            "type": msg.__class__.__name__,
+                            "content": str(msg.content)
+                        })
+                else:
+                    # Send a heartbeat so client knows the system is healthy
                     await websocket.send_json({
-                        "type": msg.__class__.__name__,
-                        "content": str(msg.content)
+                        "type": "heartbeat",
+                        "content": "System healthy — no alerts this tick"
                     })
-            else:
-                # Send a heartbeat so client knows the system is healthy
+            except Exception as e:
+                print(f"[WebSocket Error] graph.invoke failed: {e}")
                 await websocket.send_json({
-                    "type": "heartbeat",
-                    "content": "System healthy — no alerts this tick"
+                    "type": "SystemMessage",
+                    "content": f"Pipeline Error: {str(e)}"
                 })
 
             # 1-second heartbeat
