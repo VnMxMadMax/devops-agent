@@ -779,11 +779,111 @@
 
 ---
 
+### Day 8 — `12 May 2026`
+**Phase:** Phase 5 — Frontend Dashboard Initialization  
+**Time Spent:** ~2 hours  
+
+#### What I Did
+- Initialized **React + Vite Frontend**
+  - Scaffolded a new project in the `dashboard/` directory
+  - Set up standard frontend tooling and package dependencies
+- Configured **FastAPI CORS Middleware**
+  - Added `http://localhost:5173` to the backend origins whitelist
+  - Enabled cross-origin requests for local frontend development
+- Built foundational **React State Management**
+  - Created `App.jsx`
+  - Implemented state for:
+    - services
+    - active incidents
+    - messages stream
+- Integrated **WebSocket Client**
+  - Connected React to `ws://localhost:8000/ws/simulation`
+  - Began parsing `SystemMessage`, `AIMessage`, and `ToolMessage` payloads
+- Developed **REST API Polling**
+  - Added a 1-second interval to fetch system health via `/status`
+
+---
+
+#### Challenges & How I Solved Them
+- **Challenge:** Cross-Origin Resource Sharing (CORS) blocking frontend requests
+- **Solution:** 
+  - Implemented FastAPI's `CORSMiddleware`
+  - Explicitly mapped the Vite dev server port to the allowed origins list
+
+---
+
 #### Tomorrow's Goal
-- Begin frontend dashboard implementation
-  - WebSocket client connection
-  - Live metrics visualization
-  - Agent workflow UI
-  - Real-time log stream viewer
-- Build incident trigger controls
-- Start dashboard styling and layout system
+- Focus on UI/UX design and dashboard styling
+- Build the Service Health Matrix visualization
+- Implement the Agent Event Stream pane
+- Add interactive controls to trigger/resolve incidents
+
+---
+
+### Day 9 — `13 May 2026`
+**Phase:** Phase 5 — UI/UX Polish & Interactivity  
+**Time Spent:** ~3 hours  
+
+#### What I Did
+- Engineered **Premium Dashboard Aesthetics**
+  - Developed a dark mode, glassmorphism design in `index.css`
+  - Integrated `lucide-react` for modern iconography
+- Built the **Service Health Matrix**
+  - Created dynamic service cards that change styling based on health status
+  - Displayed live CPU, Memory, Latency, and Error Rate metrics
+- Developed the **Agent Event Stream**
+  - Created an auto-scrolling log pane
+  - Added distinct styling for different LangGraph message types
+- Implemented **Interactive Controls**
+  - Added UI buttons to execute `POST /incident/trigger` and `POST /incident/resolve`
+  - Connected the buttons directly to the simulation environment
+
+---
+
+#### Challenges & How I Solved Them
+- **Challenge:** Managing real-time DOM updates without performance jitter
+- **Solution:** 
+  - Abstracted styling entirely to vanilla CSS classes
+  - Utilized React `useRef` to implement smooth auto-scrolling on the event stream
+
+---
+
+#### Tomorrow's Goal
+- Conduct end-to-end testing of the full system
+- Fix edge-cases and harden the backend logic
+- Finalize documentation and repository hygiene
+- Complete the Sentinel AI project
+
+---
+
+### Day 10 — `14 May 2026`
+**Phase:** Phase 6 — Testing, Hardening & Project Finalization  
+**Time Spent:** ~2 hours  
+
+#### What I Did
+- Engineered **WebSocket Resilience**
+  - Wrapped `graph.invoke` in a `try/except` block inside the async worker thread
+  - Prevented LLM API timeouts/errors from crashing the WebSocket loop
+- Addressed **Codebase Technical Debt**
+  - Removed misleading `ws_env = env` alias variables
+  - Explicitly documented the V1 shared environment design constraints
+- Hardened **Repository Hygiene**
+  - Overhauled `.gitignore` to strictly exclude local artifacts (`chroma_db/`, `node_modules/`, `.cache/`)
+- Finalized **Project Documentation**
+  - Authored a comprehensive `README.md`
+  - Documented the multi-agent architecture, tech stack, and execution instructions
+- Conducted **Final E2E Validation**
+  - Successfully ran a full, end-to-end autonomous incident response cycle from the web UI
+
+---
+
+#### Challenges & How I Solved Them
+- **Challenge:** Avoiding silent WebSocket failures on LLM API errors
+- **Solution:** 
+  - Caught synchronous exceptions in the thread pool and forwarded them as styled `SystemMessage` strings to the frontend, keeping the loop alive.
+
+---
+
+### PROJECT COMPLETED 
+
+**Sentinel AI** is now a fully functional, autonomous, memory-augmented DevOps agent pipeline with a real-time observability dashboard!
