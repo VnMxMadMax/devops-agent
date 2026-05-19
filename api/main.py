@@ -107,7 +107,20 @@ async def simulation_ws(websocket: WebSocket):
             # Advance simulation
             services, logs = env.tick()
 
-            # Build LangGraph state
+            # ── Cost Guard ────────────────────────────────────────────────
+            # Only invoke the LangGraph pipeline (and spend API tokens) when
+            # there is an active incident. Healthy ticks short-circuit here
+            # with a free Python heartbeat — zero LLM cost.
+            # ─────────────────────────────────────────────────────────────
+            if not env.active_incidents:
+                await websocket.send_json({
+                    "type": "heartbeat",
+                    "content": "System healthy — all services nominal"
+                })
+                await asyncio.sleep(1)
+                continue
+
+            # Build LangGraph state — only reached when an incident is active
             initial_state = {
                 "messages": [],
                 "services": [
@@ -133,20 +146,14 @@ async def simulation_ws(websocket: WebSocket):
                     initial_state
                 )
 
-                # Stream messages to frontend
+                # Stream agent messages to frontend
                 messages = result.get("messages", [])
-                if messages:
-                    for msg in messages:
-                        await websocket.send_json({
-                            "type": msg.__class__.__name__,
-                            "content": str(msg.content)
-                        })
-                else:
-                    # Send a heartbeat so client knows the system is healthy
+                for msg in messages:
                     await websocket.send_json({
-                        "type": "heartbeat",
-                        "content": "System healthy — no alerts this tick"
+                        "type": msg.__class__.__name__,
+                        "content": str(msg.content)
                     })
+
             except Exception as e:
                 print(f"[WebSocket Error] graph.invoke failed: {e}")
                 await websocket.send_json({
@@ -154,7 +161,7 @@ async def simulation_ws(websocket: WebSocket):
                     "content": f"Pipeline Error: {str(e)}"
                 })
 
-            # 1-second heartbeat
+            # 1-second tick
             await asyncio.sleep(1)
 
     except WebSocketDisconnect:
