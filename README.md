@@ -15,7 +15,7 @@
 > ⚠️ *Add your dashboard GIF/screenshot here!*
 > Record a 2-3 min Loom/YouTube walkthrough showing the memory leak trigger → agent response → ChromaDB post-mortem. Paste the link below.*
 
-`[🎬 Watch the Demo](YOUR_LOOM_OR_YOUTUBE_LINK_HERE)`
+`[🎬 Watch the Demo](https://www.loom.com/share/4370722728fd49308f54cf38656a8b57)`
 
 ---
 

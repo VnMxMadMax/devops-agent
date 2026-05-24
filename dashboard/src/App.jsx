@@ -33,7 +33,10 @@ function App() {
   const [activeIncidents, setActiveIncidents] = useState([]);
   const [messages, setMessages] = useState([]);
   const [wsStatus, setWsStatus] = useState('connecting');
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [hasTriggeredBefore, setHasTriggeredBefore] = useState(false);
   const messagesEndRef = useRef(null);
+  const streamRef = useRef(null);
 
   const fetchStatus = async () => {
     try {
@@ -69,13 +72,41 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (autoScroll) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, autoScroll]);
+
+  // Pause auto-scroll the moment the user scrolls away from the bottom.
+  // Resume the moment they scroll back to within 40px of the bottom.
+  const handleStreamScroll = () => {
+    const el = streamRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    setAutoScroll(nearBottom);
+  };
+
+  const jumpToLatest = () => {
+    setAutoScroll(true);
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  };
 
   const triggerRandomIncident = async () => {
-    await fetch(`${API_URL}/incident/trigger/random`, {
-      method: 'POST'
-    });
+    // First click of the session always triggers the auth-service memory leak —
+    // it's the cleanest scenario to walk through on the demo video.
+    // Subsequent clicks fall back to random selection.
+    if (!hasTriggeredBefore) {
+      await fetch(`${API_URL}/incident/trigger`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ incident_name: 'memory_leak_auth' })
+      });
+      setHasTriggeredBefore(true);
+    } else {
+      await fetch(`${API_URL}/incident/trigger/random`, {
+        method: 'POST'
+      });
+    }
     fetchStatus();
   };
 
@@ -185,7 +216,11 @@ function App() {
               Agent Event Stream
             </h2>
           </div>
-          <div className="panel-content stream-container">
+          <div
+            className="panel-content stream-container"
+            ref={streamRef}
+            onScroll={handleStreamScroll}
+          >
             {messages.length === 0 ? (
               <div style={{ color: 'var(--text-secondary)', textAlign: 'center', marginTop: '2rem' }}>
                 Waiting for agent activity...
@@ -206,6 +241,15 @@ function App() {
               ))
             )}
             <div ref={messagesEndRef} />
+            {!autoScroll && messages.length > 0 && (
+              <button
+                className="jump-to-latest"
+                onClick={jumpToLatest}
+                aria-label="Jump to latest message"
+              >
+                ↓ Jump to latest
+              </button>
+            )}
           </div>
         </section>
       </main>

@@ -1,6 +1,12 @@
 import asyncio
 import random
 
+# Load .env BEFORE any langchain / langsmith imports happen anywhere in the
+# import graph. This guarantees LANGCHAIN_TRACING_V2 + LANGCHAIN_API_KEY are
+# in os.environ before the tracer client is constructed.
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import (
     FastAPI,
     WebSocket,

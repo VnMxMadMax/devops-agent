@@ -249,6 +249,30 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  position: relative;
+}
+
+.jump-to-latest {
+  position: sticky;
+  bottom: 0.5rem;
+  align-self: center;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--accent-color);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px var(--accent-glow);
+  transition: transform 0.15s ease, background 0.15s ease;
+  z-index: 5;
+}
+
+.jump-to-latest:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
 }
 
 .message-item {
