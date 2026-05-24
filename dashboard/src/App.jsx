@@ -5,6 +5,29 @@ import './index.css';
 const WS_URL = 'ws://localhost:8000/ws/simulation';
 const API_URL = 'http://localhost:8000';
 
+// Thresholds must match simulator/service.py per service
+const SERVICE_THRESHOLDS = {
+  'api-gateway': { cpu: 75, memory: 70, latency: 150, error_rate: 2.0 },
+  'auth-service': { cpu: 65, memory: 65, latency: 120, error_rate: 1.5 },
+  'order-service': { cpu: 85, memory: 80, latency: 200, error_rate: 3.0 },
+  'payment-service': { cpu: 70, memory: 70, latency: 250, error_rate: 2.5 },
+  'postgres-db': { cpu: 80, memory: 85, latency: 80, error_rate: 1.0 },
+};
+
+// Compute health from live metrics — svc.status from backend is static and unreliable
+function getServiceHealth(svc) {
+  const t = SERVICE_THRESHOLDS[svc.name];
+  if (!t) return 'healthy';
+  const m = svc.metrics;
+  if (
+    m.memory > t.memory ||
+    m.cpu > t.cpu ||
+    m.latency > t.latency ||
+    m.error_rate > t.error_rate
+  ) return 'critical';
+  return 'healthy';
+}
+
 function App() {
   const [services, setServices] = useState([]);
   const [activeIncidents, setActiveIncidents] = useState([]);
@@ -31,14 +54,14 @@ function App() {
 
   useEffect(() => {
     const ws = new WebSocket(WS_URL);
-    
+
     ws.onopen = () => setWsStatus('connected');
     ws.onclose = () => setWsStatus('disconnected');
-    
+
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.type === 'heartbeat') return; // Ignore heartbeats in UI
-      
+      // Ignore heartbeats — they carry no agent information
+      if (data.type === 'heartbeat') return;
       setMessages((prev) => [...prev, data]);
     };
 
@@ -49,23 +72,25 @@ function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const triggerIncident = async (name) => {
-    await fetch(`${API_URL}/incident/trigger`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ incident_name: name })
+  const triggerRandomIncident = async () => {
+    await fetch(`${API_URL}/incident/trigger/random`, {
+      method: 'POST'
     });
     fetchStatus();
   };
 
-  const resolveIncident = async (name) => {
+  const resolveActiveIncident = async () => {
+    if (activeIncidents.length === 0) return;
+    // Resolve the first active incident (could be any type)
     await fetch(`${API_URL}/incident/resolve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ incident_name: name })
+      body: JSON.stringify({ incident_name: activeIncidents[0] })
     });
     fetchStatus();
   };
+
+  const hasActiveIncident = activeIncidents.length > 0;
 
   return (
     <div className="app-container">
@@ -76,29 +101,33 @@ function App() {
           </div>
           <h1 className="title">Sentinel AI Dashboard</h1>
         </div>
-        
+
         <div className="controls">
-          <button 
+          <button
+            id="btn-trigger-incident"
             className="btn btn-trigger"
-            onClick={() => triggerIncident('memory_leak_auth')}
-            disabled={activeIncidents.includes('memory_leak_auth')}
+            onClick={triggerRandomIncident}
+            disabled={hasActiveIncident}
           >
             <ShieldAlert size={16} />
-            Trigger Memory Leak
+            Trigger Incident
           </button>
-          
-          <button 
+
+          <button
+            id="btn-resolve-incident"
             className="btn btn-resolve"
-            onClick={() => resolveIncident('memory_leak_auth')}
-            disabled={!activeIncidents.includes('memory_leak_auth')}
+            onClick={resolveActiveIncident}
+            disabled={!hasActiveIncident}
           >
             <CheckCircle size={16} />
             Resolve Incident
           </button>
-          
+
           <div className="status-badge">
-            <div className={`status-dot ${wsStatus === 'connected' ? '' : 'active-incident'}`} />
-            {wsStatus === 'connected' ? 'Live' : 'Disconnected'}
+            <div className={`status-dot ${hasActiveIncident || wsStatus !== 'connected' ? 'active-incident' : ''}`} />
+            {wsStatus !== 'connected'
+              ? 'Disconnected'
+              : hasActiveIncident ? 'Incident Active' : 'Live'}
           </div>
         </div>
       </header>
@@ -112,37 +141,40 @@ function App() {
             </h2>
           </div>
           <div className="panel-content services-list">
-            {services.map((svc) => (
-              <div 
-                key={svc.name} 
-                className={`service-card ${svc.status !== 'healthy' ? 'critical' : ''}`}
-              >
-                <div className="service-header">
-                  <span className="service-name">{svc.name}</span>
-                  <span className={`service-health ${svc.status === 'healthy' ? 'health-healthy' : 'health-unhealthy'}`}>
-                    {svc.status}
-                  </span>
+            {services.map((svc) => {
+              const health = getServiceHealth(svc);
+              return (
+                <div
+                  key={svc.name}
+                  className={`service-card ${health === 'critical' ? 'critical' : ''}`}
+                >
+                  <div className="service-header">
+                    <span className="service-name">{svc.name}</span>
+                    <span className={`service-health ${health === 'healthy' ? 'health-healthy' : 'health-unhealthy'}`}>
+                      {health}
+                    </span>
+                  </div>
+                  <div className="metrics-grid">
+                    <div className="metric-item">
+                      <span className="metric-label">CPU</span>
+                      <span className="metric-value">{svc.metrics.cpu.toFixed(1)}%</span>
+                    </div>
+                    <div className="metric-item">
+                      <span className="metric-label">Memory</span>
+                      <span className="metric-value">{svc.metrics.memory.toFixed(1)}%</span>
+                    </div>
+                    <div className="metric-item">
+                      <span className="metric-label">Latency</span>
+                      <span className="metric-value">{svc.metrics.latency.toFixed(0)}ms</span>
+                    </div>
+                    <div className="metric-item">
+                      <span className="metric-label">Error Rate</span>
+                      <span className="metric-value">{svc.metrics.error_rate.toFixed(2)}%</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="metrics-grid">
-                  <div className="metric-item">
-                    <span className="metric-label">CPU</span>
-                    <span className="metric-value">{svc.metrics.cpu.toFixed(1)}%</span>
-                  </div>
-                  <div className="metric-item">
-                    <span className="metric-label">Memory</span>
-                    <span className="metric-value">{svc.metrics.memory.toFixed(1)}%</span>
-                  </div>
-                  <div className="metric-item">
-                    <span className="metric-label">Latency</span>
-                    <span className="metric-value">{svc.metrics.latency.toFixed(0)}ms</span>
-                  </div>
-                  <div className="metric-item">
-                    <span className="metric-label">Error Rate</span>
-                    <span className="metric-value">{svc.metrics.error_rate.toFixed(2)}%</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

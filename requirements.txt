@@ -7,3 +7,4 @@ langgraph
 chromadb
 pydantic
 langchain-openai
+langsmith

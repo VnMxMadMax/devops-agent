@@ -1,6 +1,7 @@
 from langchain_core.tools import tool
 from typing import List, Dict, Any
 from memory.incident_memory import search_past_incidents
+from simulator.state import env
 
 
 @tool
@@ -33,13 +34,10 @@ def get_service_metrics(service_name: str) -> Dict[str, Any]:
     - High memory or latency may indicate performance issues
     - Increasing error_rate often indicates failures or bugs
     """
-    # Dummy implementation (to be replaced later)
-    return {
-        "cpu": 50.0,
-        "memory": 75.0,
-        "latency": 120.0,
-        "error_rate": 2.0
-    }
+    for svc in env.services:
+        if svc.name == service_name:
+            return svc.metrics.model_dump()
+    return {"error": f"Service '{service_name}' not found"}
 
 
 @tool
@@ -75,20 +73,10 @@ def get_service_logs(service_name: str) -> List[Dict[str, Any]]:
     - Repeated patterns in logs may indicate systemic issues
     - Logs are ordered from oldest to newest
     """
-    # Dummy implementation
-    return [
-        {
-            "timestamp": "2026-04-27T10:00:00",
-            "service": service_name,
-            "level": "ERROR",
-            "message": "OutOfMemoryError: heap space exceeded"
-        },
-        {
-            "timestamp": "2026-04-27T10:00:01",
-            "service": service_name,
-            "level": "ERROR",
-            "message": "Memory allocation failed during JWT decode"
-        }
+    from simulator.state import last_logs
+    return [log for log in last_logs if log.get("service") == service_name] or [
+        {"timestamp": "-", "service": service_name, "level": "INFO",
+         "message": "No recent logs available for this service."}
     ]
 
 
@@ -117,7 +105,16 @@ def restart_service(service_name: str) -> str:
     - Restarting may temporarily disrupt service availability
     - This is typically used as a short-term fix, not a permanent solution
     """
-    # Dummy implementation
+    # Find and resolve any active incident on this service so the
+    # simulation stops injecting degraded metrics next tick.
+    resolved = []
+    for inc in list(env.active_incidents):
+        if inc.service == service_name:
+            env.resolve_incident(inc.name)
+            resolved.append(inc.name)
+
+    if resolved:
+        return f"{service_name} restarted successfully. Resolved incidents: {', '.join(resolved)}"
     return f"{service_name} restarted successfully"
 
 @tool

@@ -9,11 +9,11 @@
   --text-secondary: #94a3b8;
   --accent-color: #3b82f6;
   --accent-glow: rgba(59, 130, 246, 0.5);
-  
+
   --status-healthy: #10b981;
   --status-warning: #f59e0b;
   --status-critical: #ef4444;
-  
+
   --glass-bg: rgba(20, 24, 39, 0.6);
   --glass-border: rgba(255, 255, 255, 0.05);
 }
@@ -31,7 +31,7 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  background-image: 
+  background-image:
     radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08), transparent 25%),
     radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08), transparent 25%);
   background-attachment: fixed;
@@ -108,9 +108,17 @@ body {
 }
 
 @keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
 
 .dashboard-grid {
@@ -289,19 +297,43 @@ body {
   background: rgba(16, 185, 129, 0.1);
 }
 
+.type-EscalationAlert {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.15);
+  font-weight: 700;
+}
+
+/* Escalation message gets a special full-card treatment */
+.message-item:has(.type-EscalationAlert) .message-content {
+  border-color: rgba(245, 158, 11, 0.5);
+  background: rgba(245, 158, 11, 0.06);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
+  animation: escalationPulse 1.5s ease-in-out 3;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.01em;
+}
+
+@keyframes escalationPulse {
+  0%   { box-shadow: 0 0 10px rgba(245, 158, 11, 0.1); }
+  50%  { box-shadow: 0 0 30px rgba(245, 158, 11, 0.4); }
+  100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.1); }
+}
+
 .message-content {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1rem;
-  font-family: 'Inter', monospace; /* Faux monospace for logs */
+  font-family: 'Inter', monospace;
+  /* Faux monospace for logs */
   font-size: 0.875rem;
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.6;
 }
 
-.type-ToolMessage + .message-content {
+.type-ToolMessage+.message-content {
   font-family: 'Courier New', Courier, monospace;
   background: #0a0a0a;
 }
@@ -347,8 +379,14 @@ body {
   color: #34d399;
 }
 
-.btn-resolve:hover {
+.btn-resolve:hover:not(:disabled) {
   background: rgba(16, 185, 129, 0.2);
+}
+
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* Custom Scrollbar */
