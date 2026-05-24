@@ -17,6 +17,9 @@
 
 [![Watch the Demo](path/to/your/thumbnail.png)](https://www.loom.com/share/4370722728fd49308f54cf38656a8b57)
 
+<img width="1910" height="768" alt="image" src="https://github.com/user-attachments/assets/8f97109c-a69d-4616-9dd8-3ea035dee82a" />
+
+
 ---
 
 ## 🔥 The Problem
