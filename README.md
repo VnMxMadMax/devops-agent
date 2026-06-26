@@ -10,16 +10,16 @@
 
 ---
 
-## ▶️ Demo
+## Demo
 
-> ⚠️ *Add your dashboard GIF/screenshot here!*
-> Record a 2-3 min Loom/YouTube walkthrough showing the memory leak trigger → agent response → ChromaDB post-mortem. Paste the link below.*
+Watch a complete walkthrough of the agent detecting a memory leak, generating a response, and performing the ChromaDB post-mortem analysis.
 
-[![Watch the Demo](path/to/your/thumbnail.png)](https://www.loom.com/share/4370722728fd49308f54cf38656a8b57)
+> **Flow:** Memory leak trigger → Agent diagnosis → ChromaDB post-mortem
 
-<img width="1910" height="768" alt="image" src="https://github.com/user-attachments/assets/8f97109c-a69d-4616-9dd8-3ea035dee82a" />
+[![Demo Dashboard](https://github.com/user-attachments/assets/8f97109c-a69d-4616-9dd8-3ea035dee82a)](https://www.loom.com/share/4370722728fd49308f54cf38656a8b57)
 
-
+**🎥 Loom Walkthrough (2–3 min):**
+https://www.loom.com/share/4370722728fd49308f54cf38656a8b57
 ---
 
 ## 🔥 The Problem
